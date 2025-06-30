@@ -713,9 +713,9 @@
             </div>
         </div>
 
-        <form action="{{ route('logout') }}" method="POST" style="display: inline; margin-top: auto;">
+        <form id="logoutForm" action="{{ route('logout') }}" method="POST" style="display: inline; margin-top: auto;">
             @csrf
-            <button type="submit" class="menu-item" style="width: 100%; background: none; border: none; text-align: left;">
+            <button type="button" id="logoutButton" class="menu-item" style="width: 100%; background: none; border: none; text-align: left;">
                 <i class="fas fa-sign-out-alt"></i>
                 Logout
             </button>
@@ -1042,6 +1042,25 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Logout -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="logoutModalLabel">Konfirmasi Logout</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Apakah Anda yakin ingin logout?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="confirmLogout">Logout</button>
                 </div>
             </div>
         </div>
@@ -1493,6 +1512,18 @@
                         }
                     }
                 }
+            });
+        });
+
+        // Logout modal handler
+        $(document).ready(function() {
+            $('#logoutButton').on('click', function(e) {
+                e.preventDefault();
+                var logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
+            });
+            $('#confirmLogout').on('click', function() {
+                $('#logoutForm').submit();
             });
         });
     </script>

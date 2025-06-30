@@ -42,7 +42,6 @@
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div id="dropdownMenu" class="dropdown-menu-custom">
-                
                 <a href="{{ route('pelaporan') }}" class="menu-item {{ Request::is('pelaporan*') ? 'active' : '' }}">
                     <i class="fas fa-search"></i>
                     Pelaporan
@@ -51,14 +50,35 @@
         </div>
     </div>
 
-    <div class="menu-section">
-        <form action="{{ route('logout') }}" method="POST" style="display: inline;">
-            @csrf
-            <button type="submit" class="menu-item" style="width: 100%; background: none; border: none; text-align: left;">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </button>
-        </form>
+    <!-- Spacer agar menu ke atas, logout ke bawah -->
+    <div style="flex:1 1 auto;"></div>
+
+    <!-- Tombol Logout sticky bawah -->
+    <form id="logoutForm" action="{{ route('logout') }}" method="POST" style="width: 100%;">
+        @csrf
+        <button type="button" id="logoutButton" class="menu-item" style="width: 100%; background: none; border: none; text-align: left; margin-bottom: 0.5rem;">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+        </button>
+    </form>
+</div>
+
+<!-- Modal Konfirmasi Logout -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="logoutModalLabel">Konfirmasi Logout</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Apakah Anda yakin ingin logout?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="confirmLogout">Logout</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -73,6 +93,8 @@
     padding: 1rem;
     z-index: 1000;
     transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .logo-container {
@@ -233,4 +255,15 @@ document.addEventListener('click', function(event) {
     }
 });
 
+// Logout modal handler
+$(document).ready(function() {
+    $('#logoutButton').on('click', function(e) {
+        e.preventDefault();
+        var logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+        logoutModal.show();
+    });
+    $('#confirmLogout').on('click', function() {
+        $('#logoutForm').submit();
+    });
+});
 </script>
