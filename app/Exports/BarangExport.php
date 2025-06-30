@@ -6,6 +6,9 @@ use App\Models\Barang;
 use App\Models\Lokasi;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class BarangExport
 {
@@ -31,7 +34,27 @@ class BarangExport
         $sheet->setCellValue('F1', 'Updated At');
         
         // Style the header row
-        $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '4472C4'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(30);
         
         // Get data
         $data = $this->getData();
@@ -45,13 +68,35 @@ class BarangExport
             $sheet->setCellValue('D' . $row, $item['qr_code']);
             $sheet->setCellValue('E' . $row, $item['created_at']);
             $sheet->setCellValue('F' . $row, $item['updated_at']);
+            $dataStyle = [
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                    ],
+                ],
+            ];
+            $sheet->getStyle('A' . $row . ':F' . $row)->applyFromArray($dataStyle);
+            $sheet->getRowDimension($row)->setRowHeight(25);
+            
+            // Center align specific columns
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            
             $row++;
         }
         
-        // Auto size columns
-        foreach (range('A', 'F') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
+        // Set column widths
+        $sheet->getColumnDimension('A')->setWidth(8);   // ID
+        $sheet->getColumnDimension('B')->setWidth(30);  // Nama Barang
+        $sheet->getColumnDimension('C')->setWidth(25);  // Lokasi
+        $sheet->getColumnDimension('D')->setWidth(20);  // QR Code
+        $sheet->getColumnDimension('E')->setWidth(20);  // Created At
+        $sheet->getColumnDimension('F')->setWidth(20);  // Updated At
         
         // Create writer and save file
         $writer = new Xlsx($spreadsheet);
@@ -110,4 +155,4 @@ class BarangExport
             ];
         })->toArray();
     }
-} 
+}

@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <!-- Header and Back Button -->
+   
     <div class="row mb-4">
         <div class="col">
             <div class="d-flex justify-content-between align-items-center">
@@ -85,28 +85,16 @@
                             <td class="field-value">
                                 @if($monitoring->foto || isset($monitoring->attributes['foto_url']))
                                 <div class="image-container">
-                                    <!-- Directly load image via file/base64 instead of URL -->
-                                    <div class="text-center mt-2" id="imageContainer-{{ $monitoring->id }}">
-                                        <div class="mb-2">
-                                            <i class="fas fa-spinner fa-spin"></i> Memuat gambar...
-                                        </div>
-                                        <a href="#" class="foto-link" id="fotoLink-{{ $monitoring->id }}" onclick="showImageModal({{ $monitoring->id }}); return false;">
-                                            <img id="fotoImg-{{ $monitoring->id }}" class="img-detail d-none" alt="Foto Monitoring">
+                                    <div class="text-center mt-2">
+                                        <a href="#" class="foto-link" onclick="showImageModal('{{ url($monitoring->foto_url) }}'); return false;">
+                                            <img src="{{ url($monitoring->foto_url) }}" class="img-fluid img-detail" style="max-width: 300px;" alt="Foto Monitoring">
                                         </a>
-                                    </div>
-
-                                    <!-- Debug info hidden by default -->
-                                    <div class="debug-info d-none">
-                                        <p>ID: {{ $monitoring->id }}</p>
-                                        <p>Foto tersedia: {{ !empty($monitoring->foto) ? 'Ya' : 'Tidak' }}</p>
-                                        <p>Foto URL in attribute: {{ isset($monitoring->attributes['foto_url']) ? $monitoring->attributes['foto_url'] : 'Tidak ada' }}</p>
-                                        <p>Foto URL accessor: {{ $monitoring->foto_url }}</p>
-                                        <p>Tipe data: {{ gettype($monitoring->foto) }}</p>
-                                        <p>Ukuran data: {{ !empty($monitoring->foto) ? strlen($monitoring->foto) : 0 }} bytes</p>
                                     </div>
                                 </div>
                                 @else
-                                <p class="text-muted mb-0">Tidak ada foto</p>
+                                <div class="text-muted">
+                                    <i class="fas fa-image me-1"></i> Tidak ada foto
+                                </div>
                                 @endif
                             </td>
                         </tr>
@@ -134,14 +122,13 @@
 
 @push('styles')
 <style>
-    /* Theme Colors */
+  
     :root {
         --primary: #1e88e5;
         --primary-dark: #1565c0;
         --primary-light: #e3f2fd;
     }
-    
-    /* Card styling */
+ 
     .card {
         border-radius: 10px;
         overflow: hidden;
@@ -151,7 +138,7 @@
         background-color: var(--primary) !important;
     }
     
-    /* Table styling */
+   
     .table-detail {
         font-size: 16px;
     }
@@ -174,12 +161,10 @@
         color: #333;
     }
     
-    /* Make text larger and more readable */
     .table-detail, .btn, .card-header h5 {
         font-size: 1.1rem;
     }
-    
-    /* Status styling */
+  
     .status-badge {
         padding: 0.4rem 1rem;
         border-radius: 20px;
@@ -203,7 +188,7 @@
         color: #c62828;
     }
     
-    /* Image styling */
+  
     .image-container {
         text-align: center;
     }
@@ -220,7 +205,7 @@
         transform: scale(1.02);
     }
     
-    /* Button styling */
+   
     .btn-outline-primary {
         color: var(--primary);
         border-color: var(--primary);
@@ -233,12 +218,12 @@
         color: white;
     }
     
-    /* Increase contrast for better readability */
+  
     strong {
         font-weight: 600;
     }
     
-    /* Responsive adjustments */
+    
     @media (max-width: 768px) {
         .field-name, .field-value {
             display: block;
@@ -256,16 +241,14 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Direct load image via base64/file endpoint on page load
     loadImageDirectly({{ $monitoring->id }});
     
-    // Debug mode activation
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('debug') === '1') {
         $('.debug-info').removeClass('d-none');
         console.log('Debug mode activated');
         
-        // Add Debug Info button
+
         $('#imageContainer-{{ $monitoring->id }}').append(
             '<button class="btn btn-sm btn-secondary mt-2 ms-2" onclick="showDebugInfo({{ $monitoring->id }})">' +
             '<i class="fas fa-bug me-1"></i> Tampilkan Info Debug</button>'
@@ -276,7 +259,7 @@ $(document).ready(function() {
 function loadImageDirectly(monitoringId) {
     console.log('Loading image for monitoring ID:', monitoringId);
     
-    // Get image via file endpoint (always returns base64)
+  
     $.ajax({
         url: '/monitoring/file/' + monitoringId + '?t=' + new Date().getTime(),
         method: 'GET',
@@ -286,20 +269,16 @@ function loadImageDirectly(monitoringId) {
             console.log('File response received');
             
             if (response && response.data) {
-                // Create a base64 image URL
+                
                 const imgSrc = 'data:image/jpeg;base64,' + response.data;
                 
-                // Update image and link
+                
                 const imgElement = $('#fotoImg-' + monitoringId);
                 imgElement.attr('src', imgSrc).removeClass('d-none');
-                
-                // Update link but don't set href to the image
+
                 $('#fotoLink-' + monitoringId).attr('data-img-src', imgSrc);
-                
-                // Remove loading indicator
                 $('#imageContainer-' + monitoringId + ' .mb-2').remove();
-                
-                // If it's a placeholder, show message
+        
                 if (response.is_placeholder) {
                     $('#imageContainer-' + monitoringId).append(
                         '<div class="alert alert-warning mt-2">Gambar asli tidak tersedia: ' + 
@@ -322,9 +301,7 @@ function loadImageDirectly(monitoringId) {
 function handleImageError(monitoringId, message) {
     $('#imageContainer-' + monitoringId + ' .mb-2').html(
         '<div class="alert alert-danger">' + message + '</div>'
-    );
-    
-    // Try fallback
+ 
     $('#imageContainer-' + monitoringId).append(
         '<button onclick="tryAlternateMethod(' + monitoringId + ')" class="btn btn-sm btn-outline-primary mt-2">' +
         '<i class="fas fa-sync me-1"></i> Coba metode lain</button>' +
@@ -338,7 +315,7 @@ function tryAlternateMethod(monitoringId) {
     $('#imageContainer-' + monitoringId + ' .alert').remove();
     $('#imageContainer-' + monitoringId + ' .mb-2').html('<i class="fas fa-spinner fa-spin"></i> Mencoba metode alternatif...');
     
-    // Try direct image route
+    
     $.ajax({
         url: '/monitoring/image/' + monitoringId + '?t=' + new Date().getTime(),
         method: 'GET',
@@ -352,7 +329,7 @@ function tryAlternateMethod(monitoringId) {
             $('#imageContainer-' + monitoringId + ' .mb-2').remove();
         },
         error: function() {
-            // Final fallback - try debug endpoint to analyze the issue
+           
             showDebugInfo(monitoringId);
         }
     });
@@ -361,7 +338,7 @@ function tryAlternateMethod(monitoringId) {
 function showDebugInfo(monitoringId) {
     $('#imageContainer-' + monitoringId + ' .mb-2').html('<i class="fas fa-spinner fa-spin"></i> Mengambil informasi debug...');
     
-    // Use the debug endpoint
+ 
     $.ajax({
         url: '/monitoring/debug/' + monitoringId,
         method: 'GET',
@@ -370,12 +347,12 @@ function showDebugInfo(monitoringId) {
                 const data = response.data;
                 let infoHtml = '<div class="alert alert-info"><h5>Info Debug:</h5>';
                 
-                // Basic info
+             
                 infoHtml += '<p><strong>ID:</strong> ' + data.id + '</p>';
                 infoHtml += '<p><strong>Data foto di database:</strong> ' + (data.blob_exists ? 'Ada' : 'Tidak ada') + '</p>';
                 infoHtml += '<p><strong>URL foto di database:</strong> ' + (data.foto_url_exists ? data.foto_url : 'Tidak ada') + '</p>';
                 
-                // Foto URL checks
+                
                 if (data.foto_checks && data.foto_checks.length > 0) {
                     infoHtml += '<h6>Pengecekan Path File:</h6><ul>';
                     data.foto_checks.forEach(function(check) {
@@ -388,7 +365,7 @@ function showDebugInfo(monitoringId) {
                     infoHtml += '</ul>';
                 }
                 
-                // Files in uploads directory
+              
                 if (data.uploads_dir_files) {
                     infoHtml += '<h6>Sample file di direktori uploads (' + data.uploads_dir_file_count + ' total):</h6><ul>';
                     data.uploads_dir_files.forEach(function(file) {
@@ -397,7 +374,7 @@ function showDebugInfo(monitoringId) {
                     infoHtml += '</ul>';
                 }
                 
-                // Recommendations
+               
                 if (data.recommended_solutions && data.recommended_solutions.length > 0) {
                     infoHtml += '<h6 class="text-primary">Rekomendasi Solusi:</h6><ul>';
                     data.recommended_solutions.forEach(function(solution) {
@@ -408,7 +385,7 @@ function showDebugInfo(monitoringId) {
                 
                 infoHtml += '</div>';
                 
-                // Show the debug info and buttons
+              
                 $('#imageContainer-' + monitoringId + ' .mb-2').html(infoHtml);
                 $('#imageContainer-' + monitoringId).append(
                     '<button onclick="tryFixPaths(' + monitoringId + ')" class="btn btn-primary mt-2">' +
@@ -438,7 +415,7 @@ function tryFixPaths(monitoringId) {
         method: 'GET',
         success: function(response) {
             if (response.status === 'success' && response.data && response.data.recommended_solutions) {
-                // Try to reload image after possible fixes applied during debug
+                
                 setTimeout(function() {
                     loadImageDirectly(monitoringId);
                 }, 500);
@@ -457,13 +434,38 @@ function tryFixPaths(monitoringId) {
 }
 
 function showImageModal(monitoringId) {
-    // Menggunakan src dari gambar thumbnail
+   
     var imgSrc = $('#fotoImg-' + monitoringId).attr('src');
     $('#modalImg-' + monitoringId).attr('src', imgSrc);
     var modal = new bootstrap.Modal(document.getElementById('imageModal-' + monitoringId));
     modal.show();
-    return false; // Mencegah browser navigasi
+    return false; 
 }
 </script>
 @endpush
 @endsection 
+
+<!-- Modal untuk preview foto -->
+<div class="modal fade" id="previewFotoModal" tabindex="-1" aria-labelledby="previewFotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewFotoModalLabel">Preview Foto Monitoring</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewFotoImg" src="" class="img-fluid" alt="Preview Foto Monitoring">
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+function showImageModal(imageUrl) {
+    document.getElementById('previewFotoImg').src = imageUrl;
+    var modal = new bootstrap.Modal(document.getElementById('previewFotoModal'));
+    modal.show();
+}
+</script>
+@endpush

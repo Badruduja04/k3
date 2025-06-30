@@ -35,41 +35,19 @@ class Monitoring extends Model
 
     public function getFotoUrlAttribute()
     {
-        // Check if foto_url field exists and has value in the database
-        if (isset($this->attributes['foto_url']) && !empty($this->attributes['foto_url'])) {
-            $fotoUrl = $this->attributes['foto_url'];
-            
-            // For Flutter upload URLs (containing http://10.0.2.2:5000)
-            if (strpos($fotoUrl, '10.0.2.2:5000') !== false) {
-                // Extract filename from emulator URL
-                $pattern = '/\/uploads\/([^\/\s]+\.(jpg|jpeg|png))/i';
-                if (preg_match($pattern, $fotoUrl, $matches)) {
-                    // Use the extracted filename to create a path to the uploads directory
-                    return url('uploads/' . $matches[1]);
-                }
-            }
-            
-            // Handle paths like 'uploads/123456.jpg' by ensuring we have a full URL
-            if (strpos($fotoUrl, 'uploads/') === 0 || strpos($fotoUrl, '/uploads/') === 0) {
-                return url($fotoUrl);
-            }
-            
-            // If it's already a full URL, return it as is
-            if (strpos($fotoUrl, 'http://') === 0 || strpos($fotoUrl, 'https://') === 0) {
-                return $fotoUrl;
-            }
-            
-            // Otherwise, assume it's a relative path and convert to full URL
-            return url($fotoUrl);
+        // Check if foto_url field exists and has value
+        if (!empty($this->attributes['foto_url'])) {
+            return 'uploads/' . basename($this->attributes['foto_url']);
         }
-        
-        // Fallback to database BLOB image if available
-        if (!empty($this->foto)) {
-            return route('monitoring.image', $this->id);
+
+        // If foto_url is empty but foto field exists
+        if (!empty($this->attributes['foto'])) {
+            // Assuming foto field contains filename
+            return 'uploads/' . $this->attributes['foto'];
         }
-        
-        // No image available
-        return null;
+
+        // Return default image if no foto is available
+        return 'images/no-image.jpg';
     }
 
     public function lokasi()
@@ -92,4 +70,4 @@ class Monitoring extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
     
-} 
+}

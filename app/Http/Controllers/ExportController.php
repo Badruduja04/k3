@@ -14,7 +14,12 @@ class ExportController extends Controller
         if (empty($dataTypes)) {
             return back()->with('error', 'Pilih minimal satu tipe data untuk diexport!');
         }
-        
+        // Validasi tipe data yang diizinkan
+        $allowed = ['users','barang','lokasi','monitoring','pelaporan_kerusakan','pelaporan_kehilangan'];
+        $dataTypes = array_values(array_intersect($dataTypes, $allowed));
+        if (empty($dataTypes)) {
+            return back()->with('error', 'Tipe data tidak valid!');
+        }
         $export = new \App\Exports\GeneralExport($dataTypes);
         
         // Buat nama file yang sesuai
@@ -34,23 +39,30 @@ class ExportController extends Controller
      */
     private function getFileName($dataTypes)
     {
+        $labels = [
+            'users' => 'Data Users',
+            'barang' => 'Data Barang',
+            'lokasi' => 'Data Lokasi',
+            'monitoring' => 'Data Monitoring',
+            'pelaporan_kerusakan' => 'Data Pelaporan Kerusakan',
+            'pelaporan_kehilangan' => 'Data Pelaporan Kehilangan'
+        ];
+
         if (count($dataTypes) === 1) {
             // Jika hanya satu tipe data, gunakan nama tipe data tersebut
             $type = $dataTypes[0];
-            $labels = [
-                'users' => 'Data Users',
-                'barang' => 'Data Barang',
-                'lokasi' => 'Data Lokasi',
-                'monitoring' => 'Data Monitoring',
-                'pelaporan_kerusakan' => 'Data Pelaporan Kerusakan',
-                'pelaporan_kehilangan' => 'Data Pelaporan Kehilangan'
-            ];
-            
             $name = $labels[$type] ?? 'Data ' . ucfirst($type);
             return $name . '.xlsx';
         } else {
-            // Jika lebih dari satu tipe data, gunakan nama general
-            return 'Data General.xlsx';
+            // Jika lebih dari satu tipe data, gabungkan nama-nama file
+            $fileNames = [];
+            $counter = 1;
+            foreach ($dataTypes as $type) {
+                $name = $labels[$type] ?? 'Data ' . ucfirst($type);
+                $fileNames[] = $counter . '-' . $name;
+                $counter++;
+            }
+            return implode(' ', $fileNames) . '.xlsx';
         }
     }
-} 
+}

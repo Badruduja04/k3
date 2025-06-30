@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class LossReportExport
 {
@@ -39,8 +40,29 @@ class LossReportExport
         // Set headers
         $headers = ['No', 'Tanggal', 'Nama Barang', 'Lokasi', 'Deskripsi Kehilangan', 'Status'];
         $sheet->fromArray($headers, null, 'A4');
-        $sheet->getStyle('A4:F4')->getFont()->setBold(true);
-        $sheet->getStyle('A4:F4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        
+        // Style headers
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '4472C4'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(4)->setRowHeight(30);
 
         // Get data
         $losses = Pelaporan::whereHas('statusrelation', function($q) {
@@ -73,25 +95,41 @@ class LossReportExport
                 $sheet->setCellValue('D' . $row, $loss->lokasi ? $loss->lokasi->nama_lokasi : '');
                 $sheet->setCellValue('E' . $row, $loss->keterangan);
                 $sheet->setCellValue('F' . $row, $loss->statusrelation ? $loss->statusrelation->nama_status : '');
+                
+                // Style data rows
+                $dataStyle = [
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                    ],
+                ];
+                $sheet->getStyle('A' . $row . ':F' . $row)->applyFromArray($dataStyle);
+                $sheet->getRowDimension($row)->setRowHeight(25);
+                
+                // Center align specific columns
+                $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                
                 $row++;
             }
         }
 
-        // Style the data
-        $lastRow = $row - 1;
-        $sheet->getStyle('A5:F' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('E5:E' . $lastRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-
-        // Add borders
-        $sheet->getStyle('A4:F' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        // Auto-size columns
-        foreach (range('A', 'F') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
+        // Set column widths
+        $sheet->getColumnDimension('A')->setWidth(8);   // No
+        $sheet->getColumnDimension('B')->setWidth(15);  // Tanggal
+        $sheet->getColumnDimension('C')->setWidth(30);  // Nama Barang
+        $sheet->getColumnDimension('D')->setWidth(25);  // Lokasi
+        $sheet->getColumnDimension('E')->setWidth(35);  // Deskripsi Kehilangan
+        $sheet->getColumnDimension('F')->setWidth(15);  // Status
 
         // Save the file
         $writer = new Xlsx($spreadsheet);
         $writer->save($filePath);
     }
-} 
+}

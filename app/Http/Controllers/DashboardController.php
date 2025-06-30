@@ -104,6 +104,11 @@ class DashboardController extends Controller
         $currentMonthStart = Carbon::now()->startOfMonth();
         $currentMonthEnd = Carbon::now()->endOfMonth();
 
+        // Get counts for sesuai (current month only)
+        $totalSesuai = Pelaporan::whereBetween('waktu', [$currentMonthStart, $currentMonthEnd])
+            ->where('status', '1')  // Hanya ambil status 1 (sesuai)
+            ->count();
+
         // Get counts for kerusakan (current month only)
         $totalKerusakan = Pelaporan::whereBetween('waktu', [$currentMonthStart, $currentMonthEnd])
             ->where('status', '2')  // Hanya ambil status 2 (kerusakan)
@@ -117,6 +122,22 @@ class DashboardController extends Controller
         // Get admin name
         $adminName = Auth::user()->nama ?? 'Admin';
 
+        // Get monitoring stats for current month
+        $monitoringSesuai = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'sesuai');
+            })->count();
+
+        $monitoringKerusakan = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'kerusakan');
+            })->count();
+
+        $monitoringKehilangan = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'kehilangan');
+            })->count();
+
         return view('dashboard', compact(
             'totalUser',
             'totalLokasi',
@@ -126,7 +147,69 @@ class DashboardController extends Controller
             'adminName',
             'chartData',
             'totalKerusakan',
-            'totalKehilangan'
+            'totalKehilangan',
+            'totalSesuai',
+            'monitoringSesuai',
+            'monitoringKerusakan',
+            'monitoringKehilangan'
         ));
     }
-} 
+
+    public function getPelaporanStats()
+    {
+        // Get current month's start and end dates
+        $currentMonthStart = Carbon::now()->startOfMonth();
+        $currentMonthEnd = Carbon::now()->endOfMonth();
+
+        // Get counts for each status
+        $sesuai = Pelaporan::whereBetween('waktu', [$currentMonthStart, $currentMonthEnd])
+            ->where('status', '1')
+            ->count();
+        
+        $kerusakan = Pelaporan::whereBetween('waktu', [$currentMonthStart, $currentMonthEnd])
+            ->where('status', '2')
+            ->count();
+        
+        $kehilangan = Pelaporan::whereBetween('waktu', [$currentMonthStart, $currentMonthEnd])
+            ->where('status', '3')
+            ->count();
+
+        return response()->json([
+            'labels' => ['Sesuai', 'Kerusakan', 'Kehilangan'],
+            'data' => [$sesuai, $kerusakan, $kehilangan],
+            'colors' => ['#2e7d32', '#ef6c00', '#c62828']
+        ]);
+    }
+
+    public function getMonitoringStats()
+    {
+        // Get current month's start and end dates
+        $currentMonthStart = Carbon::now()->startOfMonth();
+        $currentMonthEnd = Carbon::now()->endOfMonth();
+
+        // Get counts for each status for current month
+        $sesuai = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'sesuai');
+            })->count();
+
+        $kerusakan = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'kerusakan');
+            })->count();
+
+        $kehilangan = Monitoring::whereBetween('tanggal', [$currentMonthStart, $currentMonthEnd])
+            ->whereHas('statusRelation', function($query) {
+                $query->where('nama_status', 'kehilangan');
+            })->count();
+
+        $data = [
+            'labels' => ['Bulan ' . Carbon::now()->format('F Y')],
+            'sesuai' => [$sesuai],
+            'kerusakan' => [$kerusakan],
+            'kehilangan' => [$kehilangan]
+        ];
+
+        return response()->json($data);
+    }
+}

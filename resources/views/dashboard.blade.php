@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -190,6 +191,29 @@
             color: #6c757d;
         }
 
+        /* Chart Containers */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        canvas {
+            max-height: 300px;
+            width: 100% !important;
+            margin: 0 auto;
+        }
+
         /* Stats Cards */
         .stats-container {
             display: grid;
@@ -236,32 +260,25 @@
             font-size: 1.25rem;
         }
 
-        /* Table Styles */
-        .monitoring-section {
-            background: linear-gradient(to bottom, #ffffff, #f8f9ff);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 6px rgba(0,97,242,0.04);
-            overflow-x: auto;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* Tables Section */
+        .card {
+            background: #ffffff;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 1.5rem;
         }
 
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #333;
+        .card-header {
+            background: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem 1.5rem;
         }
 
-        .view-all {
-            color: #0061f2;
-            text-decoration: none;
-            font-size: 0.875rem;
+        .card-header h5 {
+            color: #333333;
+            margin: 0;
+            font-weight: 600;
         }
 
         .table {
@@ -271,83 +288,25 @@
 
         .table th {
             font-weight: 600;
-            color: #0061f2;
-            border-bottom: 2px solid rgba(0,97,242,0.1);
-            padding: 1rem;
+            color: #333333;
+            border-bottom: 2px solid #dee2e6;
+            padding: 0.75rem;
             white-space: nowrap;
-            background: linear-gradient(to bottom, #f8f9ff, #f0f4ff);
+            background: #ffffff;
         }
 
         .table td {
-            padding: 1rem;
+            padding: 0.75rem;
             vertical-align: middle;
-            color: #495057;
-            border-bottom: 1px solid rgba(0,97,242,0.05);
-        }
-
-        .table tbody tr {
-            transition: all 0.3s ease;
+            color: #333333;
+            border-bottom: 1px solid #dee2e6;
         }
 
         .table tbody tr:hover {
-            background: linear-gradient(to right, #f8f9ff, #f0f4ff);
+            background: #f8f9fa;
         }
 
-        .card {
-            background: linear-gradient(to bottom, #ffffff, #f8f9ff);
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(0,97,242,0.04);
-            margin-bottom: 1.5rem;
-        }
-
-        .card-header {
-            background: linear-gradient(to right, #f8f9ff, #f0f4ff);
-            border-bottom: 1px solid rgba(0,97,242,0.05);
-            padding: 1rem 1.5rem;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .card-header h5 {
-            color: #0061f2;
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* DataTables customization */
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-            background: linear-gradient(to bottom, #0061f2, #0056d6);
-            color: white !important;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 12px;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: linear-gradient(to bottom, #f0f4ff, #e6ebff);
-            color: #0061f2 !important;
-            border: none;
-        }
-
-        .dataTables_wrapper .dataTables_filter input {
-            border: 1px solid rgba(0,97,242,0.2);
-            border-radius: 6px;
-            padding: 6px 12px;
-            margin-left: 8px;
-        }
-
-        .dataTables_wrapper .dataTables_filter input:focus {
-            outline: none;
-            border-color: #0061f2;
-            box-shadow: 0 0 0 2px rgba(0,97,242,0.1);
-        }
-
-        /* Status badges with blue theme */
+        /* Status badges with neutral theme */
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -357,33 +316,35 @@
         }
 
         .status-normal {
-            background: linear-gradient(to right, #e8f5e9, #c8e6c9);
+            background: #e8f5e9;
             color: #2e7d32;
         }
 
         .status-maintenance {
-            background: linear-gradient(to right, #fff3e6, #ffe8cc);
+            background: #fff3e0;
             color: #ef6c00;
         }
 
         .status-error {
-            background: linear-gradient(to right, #ffe6e6, #ffcccc);
+            background: #ffebee;
             color: #c62828;
         }
 
         /* Action buttons */
         .btn-primary {
-            background: linear-gradient(to bottom, #0061f2, #0056d6);
+            background: #0061f2;
             border: none;
+            color: #ffffff;
             padding: 0.375rem 0.75rem;
-            border-radius: 6px;
+            border-radius: 4px;
             transition: all 0.3s ease;
         }
 
         .btn-primary:hover {
-            background: linear-gradient(to bottom, #0056d6, #004bbf);
+            background: #0056d6;
+            color: #ffffff;
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,97,242,0.2);
+            box-shadow: 0 2px 4px rgba(0,97,242,0.2);
         }
 
         .btn-sm {
@@ -651,6 +612,43 @@
             visibility: hidden;
             transition: all 0.3s ease;
         }
+
+        /* Chart Container Styles */
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-normal {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .status-maintenance {
+            background-color: #ffc107;
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -771,25 +769,21 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Chart Section -->
         <div class="row mb-4">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Statistik Status Barang</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="statusChart" height="300"></canvas>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5 class="chart-title text-center">Statistik Pelaporan Bulan Ini</h5>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="pelaporanChart"></canvas>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Pelaporan</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="statusPieChart" height="300"></canvas>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5 class="chart-title text-center">Monitoring Bulan Ini</h5>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="monitoringChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -1057,7 +1051,6 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         $(document).ready(function() {
             // Initialize DataTable
@@ -1299,206 +1292,6 @@
             });
         });
 
-        // Initialize charts when document is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Line Chart
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: {!! json_encode($chartData['labels']) !!},
-                    datasets: [
-                        {
-                            label: 'Sesuai',
-                            data: {!! json_encode($chartData['sesuai']) !!},
-                            borderColor: '#2e7d32',
-                            backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#2e7d32',
-                            pointBorderColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointHoverRadius: 6,
-                            pointHoverBorderWidth: 3,
-                            fill: true,
-                            tension: 0.8
-                        },
-                        {
-                            label: 'Kerusakan',
-                            data: {!! json_encode($chartData['kerusakan']) !!},
-                            borderColor: '#ef6c00',
-                            backgroundColor: 'rgba(239, 108, 0, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#ef6c00',
-                            pointBorderColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointHoverRadius: 6,
-                            pointHoverBorderWidth: 3,
-                            fill: true,
-                            tension: 0.8
-                        },
-                        {
-                            label: 'Kehilangan',
-                            data: {!! json_encode($chartData['kehilangan']) !!},
-                            borderColor: '#c62828',
-                            backgroundColor: 'rgba(198, 40, 40, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#c62828',
-                            pointBorderColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointHoverRadius: 6,
-                            pointHoverBorderWidth: 3,
-                            fill: true,
-                            tension: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 13,
-                                    family: "'Inter', sans-serif"
-                                },
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: ' Status Barang Perbulan',
-                            font: {
-                                size: 16,
-                                family: "'Inter', sans-serif",
-                                weight: '600'
-                            },
-                            padding: {
-                                top: 10,
-                                bottom: 30
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            titleColor: '#000',
-                            titleFont: {
-                                size: 13,
-                                family: "'Inter', sans-serif",
-                                weight: '600'
-                            },
-                            bodyColor: '#666',
-                            bodyFont: {
-                                size: 12,
-                                family: "'Inter', sans-serif"
-                            },
-                            borderColor: '#ddd',
-                            borderWidth: 1,
-                            padding: 12,
-                            usePointStyle: true,
-                            boxPadding: 6
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    family: "'Inter', sans-serif"
-                                },
-                                padding: 8
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                borderDash: [8, 4],
-                                color: '#e0e0e0'
-                            },
-                            ticks: {
-                                stepSize: 1,
-                                font: {
-                                    size: 12,
-                                    family: "'Inter', sans-serif"
-                                },
-                                padding: 12
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1500,
-                        easing: 'easeInOutQuart'
-                    }
-                }
-            });
-
-            // Pie Chart
-            const pieCtx = document.getElementById('statusPieChart').getContext('2d');
-            new Chart(pieCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Kerusakan', 'Kehilangan'],
-                    datasets: [{
-                        data: [
-                            {{ $totalKerusakan }},
-                            {{ $totalKehilangan }}
-                        ],
-                        backgroundColor: [
-                            '#ef6c00',  // Orange untuk Kerusakan
-                            '#c62828'   // Merah untuk Kehilangan
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: {
-                                    size: 12,
-                                    family: "'Inter', sans-serif"
-                                },
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Status Pelaporan Bulan Ini',
-                            font: {
-                                size: 16,
-                                family: "'Inter', sans-serif",
-                                weight: '600'
-                            },
-                            padding: {
-                                bottom: 15
-                            }
-                        }
-                    },
-                    cutout: '65%',
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true
-                    }
-                }
-            });
-        });
-
         function showPelaporanDetail(id) {
             // Reset dan tampilkan loading state
             $('#pelaporanDetailLokasi').html('<i class="fas fa-spinner fa-spin"></i>');
@@ -1515,42 +1308,59 @@
 
             // Ambil data dari server
             $.ajax({
-                url: '/pelaporan/' + id + '/detail',
+                url: '/pelaporan/' + id + '/show',
                 method: 'GET',
                 success: function(response) {
-                    // Set nilai ke dalam modal
-                    $('#pelaporanDetailLokasi').text(response.lokasi);
-                    $('#pelaporanDetailBarang').text(response.nama_barang);
-                    $('#pelaporanDetailWaktu').text(response.waktu);
-                    $('#pelaporanDetailUser').text(response.user);
-                    $('#pelaporanDetailKeterangan').text(response.keterangan);
+                    if (response.status === 'success' && response.data) {
+                        // Set nilai ke dalam modal
+                        $('#pelaporanDetailLokasi').text(response.data.lokasi || 'Tidak ada data');
+                        $('#pelaporanDetailBarang').text(response.data.barang || 'Tidak ada data');
+                        $('#pelaporanDetailWaktu').text(response.data.tanggal || 'Tidak ada data');
+                        $('#pelaporanDetailUser').text(response.data.user_name || 'Tidak ada data');
+                        $('#pelaporanDetailKeterangan').text(response.data.keterangan || 'Tidak ada data');
                     
-                    // Set status dengan badge yang sesuai
-                    const statusBadge = $('#pelaporanDetailStatus');
-                    statusBadge.text(response.status);
-                    statusBadge.removeClass().addClass('status-badge');
-                    if (response.status === 'kehilangan') {
-                        statusBadge.addClass('status-error');
-                    } else if (response.status === 'kerusakan') {
-                        statusBadge.addClass('status-maintenance');
-                    } else {
-                        statusBadge.addClass('status-normal');
-                    }
-                    
-                    // Handle foto
-                    if (response.foto_url) {
-                        $('#pelaporanPreviewImage').attr('src', response.foto_url).show();
-                        $('#pelaporanNoImage').hide();
+                        // Set status dengan badge yang sesuai
+                        const statusBadge = $('#pelaporanDetailStatus');
+                        let statusText;
                         
-                        // Add click handler for full screen
-                        $('#pelaporanPreviewImage').off('click').on('click', function() {
-                            $('#modalFullImage').attr('src', response.foto_url);
-                            var imageModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
-                            imageModal.show();
-                        });
-                    } else {
-                        $('#pelaporanPreviewImage').hide();
-                        $('#pelaporanNoImage').text('Foto tidak tersedia').show();
+                        // Cek status dari keterangan jika status_display tidak ada
+                        if (response.data.keterangan && response.data.keterangan.toLowerCase().includes('hilang')) {
+                            statusText = 'Kehilangan';
+                        } else if (response.data.keterangan && response.data.keterangan.toLowerCase().includes('rusak')) {
+                            statusText = 'Kerusakan';
+                        } else {
+                            statusText = response.data.status_display || response.data.status || 'Tidak ada data';
+                        }
+                        
+                        statusBadge.text(statusText);
+                        statusBadge.removeClass().addClass('status-badge');
+                        
+                        const statusLower = statusText.toLowerCase();
+                        if (statusLower.includes('hilang') || statusLower === 'kehilangan') {
+                            statusBadge.addClass('status-error');
+                        } else if (statusLower.includes('rusak') || statusLower === 'kerusakan') {
+                            statusBadge.addClass('status-maintenance');
+                        } else if (statusLower === 'sesuai') {
+                            statusBadge.addClass('status-normal');
+                        } else {
+                            statusBadge.addClass('status-normal');
+                        }
+                        
+                        // Handle foto
+                        if (response.data.foto_url) {
+                            $('#pelaporanPreviewImage').attr('src', response.data.foto_url).show();
+                            $('#pelaporanNoImage').hide();
+                            
+                            // Add click handler for full screen
+                            $('#pelaporanPreviewImage').off('click').on('click', function() {
+                                $('#modalFullImage').attr('src', response.data.foto_url);
+                                var imageModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+                                imageModal.show();
+                            });
+                        } else {
+                            $('#pelaporanPreviewImage').hide();
+                            $('#pelaporanNoImage').text('Foto tidak tersedia').show();
+                        }
                     }
                 },
                 error: function() {
@@ -1566,6 +1376,125 @@
                 }
             });
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Chart untuk Statistik Pelaporan
+            const pelaporanCtx = document.getElementById('pelaporanChart').getContext('2d');
+            const pelaporanChart = new Chart(pelaporanCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Sesuai', 'Kerusakan', 'Kehilangan'],
+                    datasets: [{
+                        data: [{{ $totalSesuai }}, {{ $totalKerusakan }}, {{ $totalKehilangan }}],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                family: 'Inter'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: 'Inter'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart untuk Monitoring
+            const monitoringCtx = document.getElementById('monitoringChart').getContext('2d');
+            const monitoringChart = new Chart(monitoringCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Status Monitoring'],
+                    datasets: [{
+                        label: 'Sesuai',
+                        data: [{{ $monitoringSesuai }}],
+                        backgroundColor: '#28a745'
+                    }, {
+                        label: 'Kerusakan',
+                        data: [{{ $monitoringKerusakan }}],
+                        backgroundColor: '#ffc107'
+                    }, {
+                        label: 'Kehilangan',
+                        data: [{{ $monitoringKehilangan }}],
+                        backgroundColor: '#dc3545'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                family: 'Inter'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: 'Inter'
+                            }
+                        }
+                    }
+                }
+            });
+        });
     </script>
 </body>
-</html> 
+</html>

@@ -129,39 +129,15 @@ class PelaporanController extends Controller
     public function show($id)
     {
         try {
-            // Dapatkan data dasar
-            $pelaporan = Pelaporan::findOrFail($id);
+            // Dapatkan data dengan eager loading
+            $pelaporan = Pelaporan::with(['user', 'barang.lokasi', 'statusrelation'])
+                ->findOrFail($id);
             
-            // Ambil data relasi secara manual
-            $userName = 'N/A';
-            $barangName = 'N/A';
-            $lokasiName = 'N/A';
-            $statusName = 'Error';
-            
-            if ($pelaporan->users) {
-                $user = User::find($pelaporan->users);
-                if ($user) {
-                    $userName = $user->nama;
-                }
-            }
-            
-            if ($pelaporan->nama_barang) {
-                $barang = Barang::find($pelaporan->nama_barang);
-                if ($barang) {
-                    $barangName = $barang->nama_barang;
-                    
-                    if (isset($barang->lokasi) && $barang->lokasi) {
-                        $lokasiName = $barang->lokasi->nama_lokasi;
-                    }
-                }
-            }
-            
-            if ($pelaporan->status) {
-                $status = Status::where('id_status', $pelaporan->status)->first();
-                if ($status) {
-                    $statusName = $status->nama_status;
-                }
-            }
+            // Ambil data relasi dengan pengecekan null-safe
+            $userName = $pelaporan->user->nama ?? 'N/A';
+            $barangName = $pelaporan->barang->nama_barang ?? 'N/A';
+            $lokasiName = $pelaporan->barang->lokasi->nama_lokasi ?? 'N/A';
+            $nama_status = $pelaporan->statusrelation->nama_status ?? 'Error';
             
             // Format tanggal secara manual
             $tanggal = 'Tidak ada tanggal';
@@ -183,7 +159,7 @@ class PelaporanController extends Controller
                     'user_name' => $userName,
                     'barang' => $barangName,
                     'lokasi' => $lokasiName,
-                    'status' => $statusName,
+                    'status' => $nama_status,
                     'tanggal' => $tanggal,
                     'keterangan' => $pelaporan->keterangan ?? 'Tidak ada keterangan',
                     'file' => $pelaporan->foto ? true : false,
@@ -236,7 +212,7 @@ class PelaporanController extends Controller
             $userName = 'N/A';
             $barangName = 'N/A';
             $lokasiName = 'N/A';
-            $statusName = 'Error';
+            $nama_status = 'Error';
             
             if ($pelaporan->users) {
                 $user = User::find($pelaporan->users);
@@ -259,7 +235,7 @@ class PelaporanController extends Controller
             if ($pelaporan->status) {
                 $status = Status::where('id_status', $pelaporan->status)->first();
                 if ($status) {
-                    $statusName = $status->nama_status;
+                    $nama_status = $status->nama_status;
                 }
             }
             
@@ -282,7 +258,7 @@ class PelaporanController extends Controller
                 'user_name' => $userName,
                 'barang' => $barangName,
                 'lokasi' => $lokasiName,
-                'status' => $statusName,
+                'status' => $nama_status,
                 'tanggal' => $tanggal,
                 'keterangan' => $pelaporan->keterangan ?? 'Tidak ada keterangan',
                 'file' => $pelaporan->foto ? true : false,
@@ -319,4 +295,4 @@ class PelaporanController extends Controller
             abort(500, 'Error displaying image');
         }
     }
-} 
+}

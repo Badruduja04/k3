@@ -33,21 +33,30 @@ class ReportController extends Controller
                 'pelaporan' => \App\Models\Pelaporan::count()
             ]);
 
-            // Get monthly monitoring statistics for the last 6 months
+            // Get monthly monitoring statistics for the last 6 months (per status)
             $monthlyStats = collect(range(5, 0))->map(function($i) {
                 $date = Carbon::now()->subMonths($i);
                 $startOfMonth = $date->copy()->startOfMonth();
                 $endOfMonth = $date->copy()->endOfMonth();
 
-                $totalChecks = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])->count();
-                $issues = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])
-                    ->where('status', '!=', 1) // Assuming 1 is for 'sesuai'
-                    ->count();
+                $sesuai = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+                    ->whereHas('statusRelation', function($q) {
+                        $q->where('nama_status', 'sesuai');
+                    })->count();
+                $kerusakan = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+                    ->whereHas('statusRelation', function($q) {
+                        $q->where('nama_status', 'kerusakan');
+                    })->count();
+                $kehilangan = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+                    ->whereHas('statusRelation', function($q) {
+                        $q->where('nama_status', 'kehilangan');
+                    })->count();
 
                 return [
                     'month' => $date->format('M Y'),
-                    'total_checks' => $totalChecks,
-                    'issues' => $issues
+                    'sesuai' => $sesuai,
+                    'kerusakan' => $kerusakan,
+                    'kehilangan' => $kehilangan
                 ];
             })->values()->all();
 
@@ -67,45 +76,70 @@ class ReportController extends Controller
                     ];
                 })->toArray();
 
-            // Get recent activities from monitoring
-            $monitoringActivities = Monitoring::with(['barang.lokasi', 'statusRelation', 'user'])
-                ->latest('tanggal')
-                ->take(5)
+            // Get all monitoring data with relationships
+            $allMonitoring = Monitoring::select(
+                    'monitoring.*',
+                    'barang.nama_barang as nama_barang',
+                    'lokasi.nama_lokasi as nama_lokasi',
+                    'status.nama_status as status_name',
+                    'users.nama as user_name'
+                )
+                ->leftJoin('barang', 'monitoring.nama_barang', '=', 'barang.id')
+                ->leftJoin('lokasi', 'barang.nama_lokasi', '=', 'lokasi.id')
+                ->leftJoin('status', 'monitoring.status', '=', 'status.id_status')
+                ->leftJoin('users', 'monitoring.user_id', '=', 'users.id')
+                ->orderBy('monitoring.created_at', 'desc')
                 ->get()
                 ->map(function($monitoring) {
                     return [
-                        'tanggal' => $monitoring->tanggal->format('Y-m-d H:i'),
-                        'user' => $monitoring->user ? $monitoring->user->nama : 'N/A',
-                        'lokasi' => $monitoring->barang->lokasi->nama_lokasi ?? 'N/A',
-                        'barang' => $monitoring->barang ? $monitoring->barang->nama_barang : 'N/A',
-                        'jenis' => 'Monitoring',
-                        'status' => $monitoring->statusRelation->nama_status ?? 'N/A'
+                        'id' => $monitoring->id,
+                        'barang' => [
+                            'nama_barang' => $monitoring->nama_barang,
+                            'lokasi' => [
+                                'nama_lokasi' => $monitoring->nama_lokasi
+                            ]
+                        ],
+                        'statusRelation' => [
+                            'nama_status' => $monitoring->status_name
+                        ],
+                        'created_at' => $monitoring->created_at,
+                        'user' => [
+                            'nama' => $monitoring->user_name
+                        ]
                     ];
-                })->toArray();
+                });
 
-            // Get recent activities from monitoring with better null handling
-            $monitoringActivities = Monitoring::with(['barang.lokasi', 'statusRelation', 'user'])
-                ->latest('tanggal')
-                ->take(5)
+            // Get all pelaporan data with relationships
+            $allPelaporan = Pelaporan::select(
+                    'pelaporan.*',
+                    'barang.nama_barang as nama_barang',
+                    'lokasi.nama_lokasi as nama_lokasi',
+                    'status.nama_status as status_name',
+                    'users.nama as user_name'
+                )
+                ->leftJoin('barang', 'pelaporan.nama_barang', '=', 'barang.id')
+                ->leftJoin('lokasi', 'barang.nama_lokasi', '=', 'lokasi.id')
+                ->leftJoin('status', 'pelaporan.status', '=', 'status.id_status')
+                ->leftJoin('users', 'pelaporan.user_id', '=', 'users.id')
+                ->orderBy('pelaporan.created_at', 'desc')
                 ->get()
-                ->map(function($monitoring) {
-                    $tanggal = $monitoring->tanggal ? $monitoring->tanggal->format('Y-m-d H:i') : 'N/A';
-                    $user = ($monitoring->user && isset($monitoring->user->nama)) ? $monitoring->user->nama : 'N/A';
-                    $barang = ($monitoring->barang && isset($monitoring->barang->nama_barang)) ? $monitoring->barang->nama_barang : 'N/A';
-                    $lokasi = ($monitoring->barang && $monitoring->barang->lokasi && isset($monitoring->barang->lokasi->nama_lokasi)) 
-                        ? $monitoring->barang->lokasi->nama_lokasi 
-                        : 'N/A';
-                    $status = ($monitoring->statusRelation && isset($monitoring->statusRelation->nama_status)) 
-                        ? $monitoring->statusRelation->nama_status 
-                        : 'N/A';
-                    
+                ->map(function($pelaporan) {
                     return [
-                        'tanggal' => $tanggal,
-                        'user' => $user,
-                        'lokasi' => $lokasi,
-                        'barang' => $barang,
-                        'jenis' => 'Monitoring',
-                        'status' => $status
+                        'id' => $pelaporan->id,
+                        'tanggal' => $pelaporan->tanggal ? Carbon::parse($pelaporan->tanggal)->format('Y-m-d H:i') : 'N/A',
+                        'barang' => [
+                            'nama_barang' => $pelaporan->nama_barang,
+                            'lokasi' => [
+                                'nama_lokasi' => $pelaporan->nama_lokasi
+                            ]
+                        ],
+                        'statusRelation' => [
+                            'nama_status' => $pelaporan->status_name
+                        ],
+                        'user' => [
+                            'nama' => $pelaporan->user_name
+                        ],
+                        'jenis' => 'Pelaporan'
                     ];
                 })->toArray();
                 
@@ -157,7 +191,28 @@ class ReportController extends Controller
                 ->values()
                 ->toArray();
 
-            return view('report', compact('summaryData', 'monthlyStats', 'locationStats', 'recentActivities'));
+            // Get total monitoring by status
+            $statusSesuai = Monitoring::whereHas('statusRelation', function($q) {
+                $q->where('nama_status', 'sesuai');
+            })->count();
+            $statusKerusakan = Monitoring::whereHas('statusRelation', function($q) {
+                $q->where('nama_status', 'kerusakan');
+            })->count();
+            $statusKehilangan = Monitoring::whereHas('statusRelation', function($q) {
+                $q->where('nama_status', 'kehilangan');
+            })->count();
+            $monitoringStatusCounts = [
+                'sesuai' => $statusSesuai,
+                'kerusakan' => $statusKerusakan,
+                'kehilangan' => $statusKehilangan,
+            ];
+
+            // Ambil data monitoring dan pelaporan tanpa relasi untuk debug
+            $allMonitoring = Monitoring::orderBy('tanggal', 'desc')->get();
+            $allPelaporan = Pelaporan::orderBy('waktu', 'desc')->get();
+            dd($allMonitoring->take(5));
+
+            return view('report', compact('summaryData', 'monthlyStats', 'locationStats', 'recentActivities', 'monitoringStatusCounts', 'allMonitoring', 'allPelaporan'));
         } catch (\Exception $e) {
             \Log::error('Report Error: ' . $e->getMessage());
             
@@ -170,150 +225,11 @@ class ReportController extends Controller
                 ],
                 'monthlyStats' => [],
                 'locationStats' => [],
-                'recentActivities' => []
+                'recentActivities' => [],
+                'monitoringStatusCounts' => [],
+                'allMonitoring' => [],
+                'allPelaporan' => []
             ]);
-        }
-    }
-
-    public function generatePDF()
-    {
-        try {
-            // Get accurate counts from each table
-            $summaryData = [
-                'total_users' => User::count(),
-                'total_locations' => Lokasi::count(),
-                'total_items' => Barang::count(),
-            ];
-
-            // Get monthly monitoring statistics for the last 6 months
-            $monthlyStats = collect(range(5, 0))->map(function($i) {
-                $date = Carbon::now()->subMonths($i);
-                $startOfMonth = $date->copy()->startOfMonth();
-                $endOfMonth = $date->copy()->endOfMonth();
-
-                $totalChecks = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])->count();
-                $issues = Monitoring::whereBetween('tanggal', [$startOfMonth, $endOfMonth])
-                    ->where('status', '!=', 1) // Assuming 1 is for 'sesuai'
-                    ->count();
-
-                return [
-                    'month' => $date->format('M Y'),
-                    'total_checks' => $totalChecks,
-                    'issues' => $issues
-                ];
-            })->values()->all();
-
-            // Get location statistics with real data
-            $locationStats = Lokasi::select('lokasi.id', 'lokasi.nama_lokasi as name')
-                ->selectRaw('COUNT(DISTINCT barang.id) as total_items')
-                ->selectRaw('COUNT(DISTINCT CASE WHEN monitoring.status = 1 THEN monitoring.id END) as status_ok')
-                ->leftJoin('barang', 'lokasi.id', '=', 'barang.nama_lokasi')
-                ->leftJoin('monitoring', 'barang.id', '=', 'monitoring.nama_barang')
-                ->groupBy('lokasi.id', 'lokasi.nama_lokasi')
-                ->get()
-                ->map(function($location) {
-                    return [
-                        'name' => $location->name,
-                        'total_items' => $location->total_items,
-                        'status_ok' => $location->status_ok
-                    ];
-                })->toArray();
-
-            // Get recent activities from monitoring
-            $monitoringActivities = Monitoring::with(['barang.lokasi', 'statusRelation', 'user'])
-                ->latest('tanggal')
-                ->take(10)
-                ->get()
-                ->map(function($monitoring) {
-                    return [
-                        'tanggal' => $monitoring->tanggal->format('Y-m-d H:i'),
-                        'user' => $monitoring->user ? $monitoring->user->nama : 'N/A',
-                        'lokasi' => $monitoring->barang->lokasi->nama_lokasi ?? 'N/A',
-                        'barang' => $monitoring->barang ? $monitoring->barang->nama_barang : 'N/A',
-                        'jenis' => 'Monitoring',
-                        'status' => $monitoring->statusRelation->nama_status ?? 'N/A'
-                    ];
-                })->toArray();
-
-            // Get recent activities from Pelaporan (damage and loss reports)
-            $pelaporanActivities = \App\Models\Pelaporan::with(['user', 'barang.lokasi', 'statusrelation'])
-                ->latest('waktu')
-                ->take(10)
-                ->get()
-                ->map(function($pelaporan) {
-                    return [
-                        'tanggal' => $pelaporan->waktu->format('Y-m-d H:i'),
-                        'user' => $pelaporan->user ? $pelaporan->user->nama : 'N/A',
-                        'lokasi' => $pelaporan->lokasi->nama_lokasi ?? 'N/A',
-                        'barang' => $pelaporan->barang ? $pelaporan->barang->nama_barang : 'N/A',
-                        'jenis' => 'Pelaporan ' . ucfirst($pelaporan->statusrelation->nama_status ?? ''),
-                        'status' => $pelaporan->statusrelation->nama_status ?? 'N/A'
-                    ];
-                })->toArray();
-
-            // Get recent activities from monitoring with better null handling
-            $monitoringActivities = Monitoring::with(['barang.lokasi', 'statusRelation', 'user'])
-                ->latest('tanggal')
-                ->take(10)
-                ->get()
-                ->map(function($monitoring) {
-                    $tanggal = $monitoring->tanggal ? $monitoring->tanggal->format('Y-m-d H:i') : 'N/A';
-                    $user = ($monitoring->user && isset($monitoring->user->nama)) ? $monitoring->user->nama : 'N/A';
-                    $barang = ($monitoring->barang && isset($monitoring->barang->nama_barang)) ? $monitoring->barang->nama_barang : 'N/A';
-                    $lokasi = ($monitoring->barang && $monitoring->barang->lokasi && isset($monitoring->barang->lokasi->nama_lokasi)) 
-                        ? $monitoring->barang->lokasi->nama_lokasi 
-                        : 'N/A';
-                    $status = ($monitoring->statusRelation && isset($monitoring->statusRelation->nama_status)) 
-                        ? $monitoring->statusRelation->nama_status 
-                        : 'N/A';
-                    
-                    return [
-                        'tanggal' => $tanggal,
-                        'user' => $user,
-                        'lokasi' => $lokasi,
-                        'barang' => $barang,
-                        'jenis' => 'Monitoring',
-                        'status' => $status
-                    ];
-                })->toArray();
-                
-            // Get recent activities from Pelaporan with better null handling
-            $pelaporanActivities = \App\Models\Pelaporan::with(['user', 'barang.lokasi', 'statusrelation'])
-                ->latest('waktu')
-                ->take(10)
-                ->get()
-                ->map(function($pelaporan) {
-                    $tanggal = $pelaporan->waktu ? $pelaporan->waktu->format('Y-m-d H:i') : 'N/A';
-                    $user = ($pelaporan->user && isset($pelaporan->user->nama)) ? $pelaporan->user->nama : 'N/A';
-                    $barang = ($pelaporan->barang && isset($pelaporan->barang->nama_barang)) ? $pelaporan->barang->nama_barang : 'N/A';
-                    $lokasi = ($pelaporan->lokasi && isset($pelaporan->lokasi->nama_lokasi)) ? $pelaporan->lokasi->nama_lokasi : 'N/A';
-                    $status = ($pelaporan->statusrelation && isset($pelaporan->statusrelation->nama_status)) 
-                        ? $pelaporan->statusrelation->nama_status 
-                        : 'N/A';
-                    $jenis = 'Pelaporan ' . ($status !== 'N/A' ? ucfirst($status) : '');
-                    
-                    return [
-                        'tanggal' => $tanggal,
-                        'user' => $user,
-                        'lokasi' => $lokasi,
-                        'barang' => $barang,
-                        'jenis' => $jenis,
-                        'status' => $status
-                    ];
-                })->toArray();
-                
-            // Combine both collections and sort by date (newest first)
-            $recentActivities = collect(array_merge($monitoringActivities, $pelaporanActivities))
-                ->sortByDesc('tanggal')
-                ->take(15)
-                ->values()
-                ->toArray();
-
-            return view('report', compact('summaryData', 'monthlyStats', 'locationStats', 'recentActivities'))
-                ->with('pdf_mode', true);
-        } catch (\Exception $e) {
-            \Log::error('Report PDF Error: ' . $e->getMessage());
-            return back()->with('error', 'Gagal membuat PDF. Silakan coba lagi.');
         }
     }
 
@@ -514,4 +430,4 @@ class ReportController extends Controller
             ]);
         }
     }
-} 
+}

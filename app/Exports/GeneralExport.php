@@ -46,7 +46,7 @@ class GeneralExport
                 case 'monitoring':
                     $sheet->setTitle('Monitoring');
                     $headers = ['ID', 'Tanggal', 'User', 'Nama Barang', 'Lokasi', 'Status', 'Keterangan'];
-                    $data = \App\Models\Monitoring::with(['user', 'barang', 'lokasi', 'statusRelation'])->get();
+                    $data = \App\Models\Monitoring::with(['user', 'barang.lokasi', 'statusRelation'])->get();
                     break;
                 case 'pelaporan_kerusakan':
                     $sheet->setTitle('Pelaporan Kerusakan');
@@ -66,50 +66,75 @@ class GeneralExport
                     $headers = [];
                     $data = collect();
             }
+            // Set header
             $sheet->fromArray($headers, null, 'A1');
+            // Style header
+            $headerCol = chr(65 + count($headers) - 1);
+            $sheet->getStyle('A1:' . $headerCol . '1')->applyFromArray([
+                'font' => [ 'bold' => true, 'color' => ['rgb' => 'FFFFFF'] ],
+                'fill' => [ 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4'] ],
+                'alignment' => [ 'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER ],
+                'borders' => [ 'allBorders' => [ 'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN ] ],
+            ]);
+            $sheet->getRowDimension(1)->setRowHeight(30);
+            // Data
             $row = 2;
             foreach ($data as $item) {
                 switch ($type) {
                     case 'users':
-                        $sheet->fromArray([
+                        $values = [
                             $item->id, $item->nama, $item->email, $item->NUP, $item->departement, $item->sub_departement, $item->status
-                        ], null, 'A'.$row);
+                        ];
                         break;
                     case 'barang':
-                        $sheet->fromArray([
+                        $values = [
                             $item->id, $item->nama_barang, $item->id_lokasi
-                        ], null, 'A'.$row);
+                        ];
                         break;
                     case 'lokasi':
-                        $sheet->fromArray([
+                        $values = [
                             $item->id, $item->nama_lokasi, $item->latitude, $item->longitude
-                        ], null, 'A'.$row);
+                        ];
                         break;
                     case 'monitoring':
-                        $sheet->fromArray([
+                        $values = [
                             $item->id,
-                            $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->locale('id')->translatedFormat('d F Y H:i') : '',
+                            $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y H:i') : '',
                             $item->user ? $item->user->nama : '',
                             $item->barang ? $item->barang->nama_barang : '',
-                            $item->lokasi ? $item->lokasi->nama_lokasi : '',
+                            ($item->barang && $item->barang->lokasi) ? $item->barang->lokasi->nama_lokasi : '',
                             $item->statusRelation ? $item->statusRelation->nama_status : '',
                             $item->keterangan
-                        ], null, 'A'.$row);
+                        ];
                         break;
                     case 'pelaporan_kerusakan':
                     case 'pelaporan_kehilangan':
-                        $sheet->fromArray([
+                        $values = [
                             $item->id,
                             $item->user ? $item->user->nama : '',
                             $item->barang ? $item->barang->nama_barang : '',
                             $item->lokasi ? $item->lokasi->nama_lokasi : '',
                             $item->statusrelation ? $item->statusrelation->nama_status : '',
                             $item->keterangan,
-                            $item->waktu ? \Carbon\Carbon::parse($item->waktu)->locale('id')->translatedFormat('d F Y H:i') : ''
-                        ], null, 'A'.$row);
+                            $item->waktu ? \Carbon\Carbon::parse($item->waktu)->format('d/m/Y H:i') : ''
+                        ];
                         break;
+                    default:
+                        $values = [];
                 }
+                $sheet->fromArray($values, null, 'A'.$row);
+                // Style data row
+                $sheet->getStyle('A'.$row . ':' . $headerCol . $row)->applyFromArray([
+                    'alignment' => [ 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER ],
+                    'borders' => [ 'allBorders' => [ 'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN ] ],
+                ]);
+                $sheet->getRowDimension($row)->setRowHeight(22);
                 $row++;
+            }
+            // Set auto width for all columns
+            for ($col = 0; $col < count($headers); $col++) {
+                $colLetter = chr(65 + $col);
+                $sheet->getColumnDimension($colLetter)->setAutoSize(true);
             }
             $sheetIndex++;
         }

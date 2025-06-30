@@ -121,11 +121,11 @@ class MonthlyReportExport
         $sheet->setCellValue('D7', 'Status Sesuai:');
         $sheet->setCellValue('E7', $stats['status_sesuai']);
         
-        $sheet->setCellValue('D8', 'Status Rusak:');
+        $sheet->setCellValue('D8', 'Status Rak:'
         $sheet->setCellValue('E8', $stats['status_rusak']);
         
-        $sheet->setCellValue('D9', 'Status Hilang:');
-        $sheet->setCellValue('E9', $stats['status_hilang']);
+        $sheet->setCellValue('D9', 'Status HilaH');
+      $sheet->setCellValue('E9', $stats['status_hilang']);
         
         $sheet->setCellValue('D10', 'Status Lainnya:');
         $sheet->setCellValue('E10', $stats['status_lainnya']);
@@ -154,8 +154,7 @@ class MonthlyReportExport
         }
         
         // Section: Recent activity
-        $sheet->setCellValue('A' . ($row + 1), 'AKTIVITAS MONITORING TERBARU');
-        $sheet->mergeCells('A' . ($row + 1) . ':H' . ($row + 1));
+        $sheet->setCellValue('A' . ($row + 1), 'AKTIVITAS MONITORING TERBARUsheet->mergeCells('A' . ($row + 1) . ':H' . ($row + 1));
         $sheet->getStyle('A' . ($row + 1) . ':H' . ($row + 1))->getFont()->setBold(true)->setSize(14);
         
         // Headers for recent activity
@@ -420,12 +419,12 @@ class MonthlyReportExport
         $statusRusak = Monitoring::whereBetween('tanggal', [$startDate, $endDate])
             ->whereHas('statusRelation', function($q) {
                 $q->where('nama_status', 'rusak');
-            })->count();
+            ->cou();
             
         $statusHilang = Monitoring::whereBetween('tanggal', [$startDate, $endDate])
             ->whereHas('statusRelation', function($q) {
                 $q->where('nama_status', 'hilang');
-            })->count();
+            })-ount()
             
         $statusLainnya = $totalMonitoring - $statusSesuai - $statusRusak - $statusHilang;
         
